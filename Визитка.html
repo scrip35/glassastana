@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Завод закаленного стекла — Астана</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #e5e7eb;
+            --text-color: #020617;
+            --glass-pane: rgba(139, 94, 60, 0.25);
+            --glass-border: rgba(139, 94, 60, 0.4);
+            --glass-blur: 25px;
+        }
+
+        .dark-mode {
+            --bg-color: #020617;
+            --text-color: #f8fafc;
+            --glass-pane: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-blur: 40px;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.8s ease;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        .liquid-glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+            -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+            border-radius: 20px;
+        }
+
+        #glass-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100vh;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .theme-switch {
+            width: 60px; height: 32px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 40px;
+            position: relative;
+            cursor: pointer;
+            padding: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transform: scale(0.9);
+        }
+        .theme-knob {
+            width: 24px; height: 24px;
+            background: #fff;
+            border-radius: 50%;
+            position: absolute;
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        .dark-mode .theme-knob { transform: translateX(28px); background: #1e293b; color: #fff; }
+
+        section { padding: 100px 7%; min-height: 100vh; display: flex; align-items: center; }
+
+        .hero-title { font-weight: 900; font-size: clamp(3rem, 10vw, 7.5rem); line-height: 0.85; letter-spacing: -0.06em; }
+
+        .test-pane {
+            height: 450px;
+            background: var(--glass-pane);
+            backdrop-filter: blur(15px);
+            border: 2px solid var(--glass-border);
+            position: relative;
+            cursor: crosshair;
+            border-radius: 12px;
+            transition: opacity 0.3s ease;
+        }
+
+        .shard {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(5px);
+            border: 0.5px solid rgba(255, 255, 255, 0.8);
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        .btn-action {
+            padding: 20px 40px;
+            border-radius: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            font-size: 13px;
+            letter-spacing: 0.1em;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        #guide-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(20px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .glass-nav-container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50px;
+            padding: 10px 30px;
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="glass-canvas"></canvas>
+
+    <!-- Header -->
+    <nav class="fixed top-0 w-full z-50 px-6 py-6 flex justify-between items-center bg-transparent">
+        <div onclick="window.scrollTo({top:0, behavior:'smooth'})" class="text-2xl font-black tracking-tighter cursor-pointer hover:scale-105 transition-transform px-6 py-2 liquid-glass">АЙШАХНУР</div>
+        
+        <div class="flex items-center gap-6">
+            <div class="hidden lg:flex glass-nav-container">
+                <a href="#test" class="font-bold uppercase tracking-widest text-[10px] opacity-70 hover:opacity-100 transition">Экспертиза</a>
+                <a href="#benefits" class="font-bold uppercase tracking-widest text-[10px] opacity-70 hover:opacity-100 transition">Технологии</a>
+                <a href="https://2gis.kz/astana/geo/9570784863357339" target="_blank" class="text-blue-500 font-bold uppercase tracking-widest text-[10px]">Наш адрес</a>
+            </div>
+            <div class="theme-switch" onclick="toggleTheme()">
+                <div class="theme-knob" id="knob-icon">☀️</div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section>
+        <div class="max-w-5xl">
+            <h1 class="hero-title mb-10">Стекло, которое <br><span class="text-blue-600">не подводит</span></h1>
+            <p class="text-2xl opacity-80 mb-14 max-w-2xl font-medium leading-tight">
+                Прямые поставки закаленного стекла в Астане. Идеальная плоскость, честные сроки и цены без лишних накруток.
+            </p>
+            <div class="flex gap-6">
+                <a href="https://wa.me/77751099656" target="_blank" class="btn-action bg-blue-600 text-white shadow-2xl shadow-blue-500/30">Связаться</a>
+                <button onclick="document.getElementById('test').scrollIntoView({behavior:'smooth'})" class="btn-action liquid-glass">Тест прочности</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Test Zone -->
+    <section id="test" class="flex-col !items-start">
+        <div class="mb-16">
+            <h2 class="text-4xl font-black mb-4 uppercase italic">Краш-тест</h2>
+            <p class="opacity-60 text-lg">Нажмите на стекло, чтобы увидеть физику разрушения.</p>
+        </div>
+        <div class="grid md:grid-cols-2 gap-10 w-full relative">
+            <div class="flex flex-col gap-6 relative">
+                <div id="glass-1" class="test-pane flex items-center justify-center" onclick="breakGlass(event, this, 'normal')">
+                    <span class="text-[12px] font-black uppercase tracking-widest opacity-40 pointer-events-none">Обычное стекло</span>
+                </div>
+                <p class="text-xs font-bold uppercase tracking-tighter opacity-40">Крупногабаритные осколки с острыми кромками</p>
+            </div>
+            <div class="flex flex-col gap-6 relative">
+                <div id="glass-2" class="test-pane flex items-center justify-center" onclick="breakGlass(event, this, 'tempered')">
+                    <span class="text-[12px] font-black uppercase tracking-widest text-blue-600 pointer-events-none">Закаленное стекло</span>
+                </div>
+                <p class="text-xs font-bold uppercase tracking-tighter opacity-40">Безопасная мелкозернистая фракция</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section id="benefits">
+        <div class="grid lg:grid-cols-2 gap-24 items-center w-full">
+            <div class="liquid-glass p-16 relative overflow-hidden">
+                <h3 class="text-3xl font-black mb-12 uppercase tracking-tighter">Наш подход</h3>
+                <div class="space-y-16">
+                    <div class="flex gap-8">
+                        <div class="w-14 h-14 rounded-xl bg-blue-600 flex items-center justify-center text-white shrink-0 shadow-lg">01</div>
+                        <div>
+                            <p class="font-bold text-2xl mb-2">Оперативность</p>
+                            <p class="opacity-60 leading-relaxed">Быстрый расчет и запуск в работу. Мы ценим время ваших проектов.</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-8">
+                        <div class="w-14 h-14 rounded-xl bg-blue-600 flex items-center justify-center text-white shrink-0 shadow-lg">02</div>
+                        <div>
+                            <p class="font-bold text-2xl mb-2">Надежный продукт</p>
+                            <p class="opacity-60 leading-relaxed">Стекло, которое выдерживает нагрузки и сохраняет прозрачность годами.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <h2 class="text-6xl font-black mb-12 leading-none uppercase">Работаем на <span class="text-blue-600">результат</span></h2>
+                <p class="text-2xl opacity-60 leading-relaxed mb-12">
+                    Просто качественное стекло, вовремя и по адресу. Мы создаем надежную основу для ваших конструкций.
+                </p>
+                <button onclick="openGuide()" class="btn-action bg-black text-white dark:bg-white dark:text-black w-full text-center hover:scale-105">Начать сотрудничество</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Guide Modal -->
+    <div id="guide-modal" onclick="closeGuide()">
+        <div class="liquid-glass p-12 max-w-lg w-full mx-4" onclick="event.stopPropagation()">
+            <h3 class="text-3xl font-black mb-6 uppercase text-white">Сотрудничество</h3>
+            <p class="text-white opacity-90 mb-8 leading-relaxed">
+                Ищете надежного партнера по стеклу? <br><br>
+                1. Свяжитесь с нами <br>
+                2. Отправьте спецификации <br>
+                3. Получите расчет и сроки <br><br>
+                Никакой воды, только деловой подход.
+            </p>
+            <div class="flex flex-col gap-4">
+                <a href="https://wa.me/77751099656" class="btn-action bg-blue-600 text-white text-center">Перейти в WhatsApp</a>
+                <button onclick="closeGuide()" class="text-white opacity-60 font-bold uppercase text-[10px] tracking-widest mt-4">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="py-24 border-t border-black/5">
+        <div class="px-10 flex flex-col md:flex-row justify-between items-start gap-12">
+            <div class="max-w-md">
+                <div class="text-3xl font-black mb-4">АЙШАХНУР</div>
+                <p class="opacity-40 mb-8">Закаленное стекло для современных задач. Астана.</p>
+                <a href="https://2gis.kz/astana/geo/9570784863357339" target="_blank" class="p-4 liquid-glass inline-block font-bold hover:text-blue-600 transition">ул. Байшешек 2</a>
+            </div>
+            <div class="flex flex-col md:items-end">
+                <span class="text-[11px] font-bold uppercase opacity-30 mb-4 tracking-widest">Контактный телефон</span>
+                <a href="tel:+77751099656" class="text-4xl md:text-6xl font-black hover:text-blue-600 transition">+7 775 109 9656</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // --- 3D BACKGROUND ---
+        let scene, camera, renderer, knot;
+        
+        function init3D() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('glass-canvas'), alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+
+            const geometry = new THREE.TorusKnotGeometry(12, 3, 150, 20);
+            const material = new THREE.MeshPhysicalMaterial({
+                color: 0x8b5e3c,
+                transmission: 0.9,
+                thickness: 8,
+                roughness: 0.1,
+                transparent: true,
+                opacity: 0.2,
+                clearcoat: 1
+            });
+            knot = new THREE.Mesh(geometry, material);
+            scene.add(knot);
+
+            const light = new THREE.PointLight(0xffffff, 1.5);
+            light.position.set(20, 20, 20);
+            scene.add(light);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+
+            camera.position.z = 40;
+            animate();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            knot.rotation.y += 0.005;
+            knot.rotation.x += 0.002;
+            renderer.render(scene, camera);
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            document.getElementById('knob-icon').innerText = isDark ? '🌙' : '☀️';
+            gsap.to(knot.material.color, {
+                r: isDark ? 0.3 : 0.54, g: isDark ? 0.4 : 0.37, b: isDark ? 0.8 : 0.23,
+                duration: 1
+            });
+            knot.material.opacity = isDark ? 0.08 : 0.2;
+        }
+
+        // --- GLASS BREAKER (RESTORED & WORKING) ---
+        function breakGlass(event, pane, type) {
+            if (pane.dataset.broken === "true") return;
+            pane.dataset.broken = "true";
+
+            const rect = pane.getBoundingClientRect();
+            const clickX = event.clientX - rect.left;
+            const clickY = event.clientY - rect.top;
+
+            // Скрываем основное стекло
+            pane.style.opacity = "0";
+
+            // Настройки осколков
+            const shardCount = type === 'normal' ? 15 : 150;
+            const shardMinSize = type === 'normal' ? 60 : 6;
+            const shardMaxSize = type === 'normal' ? 120 : 15;
+
+            for (let i = 0; i < shardCount; i++) {
+                const shard = document.createElement('div');
+                shard.className = 'shard';
+                
+                const w = Math.random() * (shardMaxSize - shardMinSize) + shardMinSize;
+                const h = Math.random() * (shardMaxSize - shardMinSize) + shardMinSize;
+                
+                shard.style.width = w + 'px';
+                shard.style.height = h + 'px';
+                shard.style.left = clickX + 'px';
+                shard.style.top = clickY + 'px';
+
+                // Геометрия
+                let p;
+                if(type === 'normal') {
+                    p = [`${Math.random()*20}% 0%`, `100% ${Math.random()*100}%`, `${Math.random()*100}% 100%`, `0% ${Math.random()*50}%`];
+                } else {
+                    p = [`${20+Math.random()*60}% 0%`, `100% ${20+Math.random()*60}%`, `${20+Math.random()*60}% 100%`, `0% ${20+Math.random()*60}%`];
+                }
+                shard.style.clipPath = `polygon(${p.join(',')})`;
+                
+                pane.parentElement.appendChild(shard);
+
+                // Физика разлета
+                const angle = Math.random() * Math.PI * 2;
+                const distance = type === 'normal' ? (Math.random() * 400 + 100) : (Math.random() * 600 + 200);
+                
+                gsap.to(shard, {
+                    x: Math.cos(angle) * distance,
+                    y: Math.sin(angle) * distance + 300,
+                    rotation: Math.random() * 720,
+                    opacity: 0,
+                    scale: 0.5,
+                    duration: 2,
+                    ease: "power2.out",
+                    onComplete: () => shard.remove()
+                });
+            }
+
+            // Восстановление стекла через 2.5 сек
+            setTimeout(() => {
+                gsap.to(pane, { opacity: 1, duration: 0.8 });
+                pane.dataset.broken = "false";
+            }, 2500);
+        }
+
+        function openGuide() { document.getElementById('guide-modal').style.display = 'flex'; }
+        function closeGuide() { document.getElementById('guide-modal').style.display = 'none'; }
+
+        window.onload = init3D;
+        window.onresize = () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        };
+    </script>
+</body>
+</html>
